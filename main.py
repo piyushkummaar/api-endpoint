@@ -46,6 +46,9 @@ def autoamtion_scraper(session: Session = Depends(get_session)):
     opt = Options()
     opt.add_argument("--disable-infobars")
     opt.add_argument("start-maximized")
+    opt.add_argument("--headless")
+    opt.add_argument("--disable-dev-shm-usage")
+    opt.add_argument("--no-sandbox")
     opt.add_argument("--disable-extensions")
     # Pass the argument 1 to allow and 2 to block
     opt.add_experimental_option("prefs", { \
