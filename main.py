@@ -6,7 +6,7 @@ import models
 import uvicorn
 from database import Base, engine, SessionLocal
 from sqlalchemy.orm import Session 
-from datetime import date
+from datetime import date,datetime
 import os,sys
 
 
@@ -46,29 +46,42 @@ async def autoamtion_scraper(file: UploadFile,event_id: str = Form(),session: Se
     This script enable the python script to run the selenium automation script that.
     Pull out the data from the website. From Given QR.
     '''
-    try:
-        from PIL import Image
-        import pytesseract
-        contents = await file.read()
-        check_file_type = file.filename.split(".")[-1]
-        if check_file_type == "jpg" or check_file_type == "png" or check_file_type == "jpeg":
-            if not os.path.exists('uploads'):
-                os.makedirs('uploads')
-            if sys.platform == 'win32':
-                pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
-                save_file_path = os.getcwd()+"\\uploads\\"+file.filename
-            else:
-                pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
-                save_file_path = os.getcwd()+"/uploads/"+file.filename
-            save_file(save_file_path, contents)
-        raw_data = pytesseract.image_to_string(Image.open(save_file_path))
-        os.remove(save_file_path)
-        data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
-        eventObject = session.query(models.EventDB).get(event_id)
-        
-        return ORJSONResponse({"data":data,"event_id":event_id})
-    except Exception as e:
-        return ORJSONResponse({"data":e})
+    currentDateAndTime = datetime.now()
+    from PIL import Image
+    import pytesseract
+    contents = await file.read()
+    check_file_type = file.filename.split(".")[-1]
+    if check_file_type == "jpg" or check_file_type == "png" or check_file_type == "jpeg":
+        if not os.path.exists('uploads'):
+            os.makedirs('uploads')
+        if sys.platform == 'win32':
+            pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+            save_file_path = os.getcwd()+"\\uploads\\"+file.filename
+        else:
+            pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
+            save_file_path = os.getcwd()+"/uploads/"+file.filename
+        save_file(save_file_path, contents)
+    raw_data = pytesseract.image_to_string(Image.open(save_file_path))
+    os.remove(save_file_path)
+    data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
+    eventObject = session.query(models.EventDB).get(event_id) 
+    phonebook = session.query(models.PhonebookDB).get(event_id)
+    # create participant record
+    item = models.ParticipantRecord(
+    event_name = eventObject.event_name,
+    date_attended = date.today(),
+    hour = currentDateAndTime.strftime("%H"),
+    participant_id = phonebook.participant_id,
+    )
+    session.add(item)
+    session.commit()
+
+    return ORJSONResponse({"data":data,"phonebook":{
+        'first_name':phonebook.first_name,
+        'last_name':phonebook.last_name,
+        'rut_id':phonebook.rut_id,
+        'phone_number':phonebook.phone_number
+    }})
 @app.get("/getevents",tags=['Events'])
 def get_events(session: Session = Depends(get_session)):
     events = session.query(models.EventDB).all()
@@ -150,6 +163,7 @@ def add_phonebook(item:schemas.PhonebookDB, session: Session = Depends(get_sessi
         qr_code_scanmevacuno = item.qr_code_scanmevacuno,
         created_datetime = item.created_datetime,
         qr_code_registrocivil = item.qr_code_registrocivil,
+        event_id = item.event_id,
     )
     session.add(item)
     session.commit()
@@ -167,6 +181,7 @@ def update_phonebook(id:int, item:schemas.PhonebookDB, session: Session = Depend
     itemObject.qr_code_scanmevacuno = item.qr_code_scanmevacuno
     itemObject.created_datetime = item.created_datetime
     itemObject.qr_code_registrocivil = item.qr_code_registrocivil
+    itemObject.qr_code_registrocivil = item.event_id
     session.commit()
     return itemObject
 

@@ -10,6 +10,7 @@ class PhonebookDB(BaseModel):
     qr_code_scanmevacuno : str
     created_datetime : date
     qr_code_registrocivil : str
+    event_id : str
 
 class EventDB(BaseModel):
     event_name : str

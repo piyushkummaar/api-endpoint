@@ -11,6 +11,8 @@ class PhonebookDB(Base):
     qr_code_scanmevacuno = Column(String(512))
     created_datetime = Column(Date)
     qr_code_registrocivil = Column(String(512))
+    event_id = Column(Integer)
+
 
 class EventDB(Base):
     __tablename__ = 'event_tbl'
@@ -26,7 +28,7 @@ class EventDB(Base):
 class ParticipantRecord(Base):
     __tablename__ = 'participant_record_tbl'
     participant_record_id = Column(Integer, primary_key=True)
-    Event_name = Column(String(256))
-    Date_attended = Column(Date)
-    Hour = Column(String(256))
-    Participant_id = Column(Integer)
+    event_name = Column(String(256))
+    date_attended = Column(Date)
+    hour = Column(String(256))
+    participant_id = Column(Integer)
