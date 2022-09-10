@@ -35,3 +35,6 @@ class ParticipantRecord(BaseModel):
     date_attended : date
     hour : str
     participant_id : int
+
+class Autosp(BaseModel):
+    event_id : str

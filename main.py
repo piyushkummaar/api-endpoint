@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Body, Depends
+from fastapi.encoders import jsonable_encoder
 import schemas
+from fastapi.responses import ORJSONResponse
 import models
 import uvicorn
 from database import Base, engine, SessionLocal
@@ -22,60 +24,65 @@ app = FastAPI(
     version="1.0.0",
 )
 
-@app.get("/",tags=['Documentation'])
+
+@app.get("/",tags=['Documentation'],response_class=ORJSONResponse)
 def documentation_urls(session: Session = Depends(get_session)):
     res = {
-        "doc-url":"",
-        "re-doc-url":""
+        "doc_url":"https://api-endpointss.herokuapp.com/docs",
+        "re_doc_url":"https://api-endpointss.herokuapp.com/redoc"
     }
-    return res
+    
+    return ORJSONResponse(res)
 
-@app.get("/automationscrape",tags=['Automation Scraper'])
-def autoamtion_scraper(session: Session = Depends(get_session)):
+@app.post("/automationscrape",tags=['Automation Scraper'])
+def autoamtion_scraper(event:schemas.Autosp,session: Session = Depends(get_session)):
     '''
     This script enable the python script to run the selenium automation script that.
     Pull out the data from the website. From Given QR.
     '''
-    # automation
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.chrome.service import Service as ChromeService
-    from webdriver_manager.chrome import ChromeDriverManager
-    from selenium.webdriver.common.by import By
-    import time
-    opt = Options()
-    opt.add_argument("--disable-infobars")
-    opt.add_argument("start-maximized")
-    opt.add_argument("--headless")
-    opt.add_argument("--disable-dev-shm-usage")
-    opt.add_argument("--no-sandbox")
-    opt.add_argument("--disable-extensions")
-    # Pass the argument 1 to allow and 2 to block
-    opt.add_experimental_option("prefs", { \
-        "profile.default_content_setting_values.media_stream_camera": 1,
-        })
-    _url_path = "https://scanmevacuno.gob.cl/"
-    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),options=opt,)
-    driver.get(_url_path)
-    time.sleep(3)
-    driver.find_element(By.CLASS_NAME,'color-purple').click()
-    driver.find_element(By.CLASS_NAME,'dialog-button-bold').click()
-    time.sleep(10)
-    data = driver.find_element(By.CLASS_NAME,'identidad')
-    driver.close()
-    # end
-    res = data.text.split('\n')
-    event = models.EventDB(
-        event_name = res[0],
-        event_location = res[1],
-        register_code = res[2],
-        export_code = ' ',
-        qr_code_scanmevacuno = ' ',
-        created_datetime = date.today(),
-        qr_code_registrocivil = ' ',
-    )
-    return {"data":data.text.split('\n')}
-
+    print(event.event_id)
+    # # automation
+    # from selenium import webdriver
+    # from selenium.webdriver.chrome.options import Options
+    # from selenium.webdriver.chrome.service import Service as ChromeService
+    # from webdriver_manager.chrome import ChromeDriverManager
+    # from selenium.webdriver.common.by import By
+    # import time
+    # opt = Options()
+    # opt.add_argument("--disable-infobars")
+    # opt.add_argument("start-maximized")
+    # opt.add_argument("--headless")
+    # opt.add_argument("--disable-dev-shm-usage")
+    # opt.add_argument("--no-sandbox")
+    # opt.add_argument("--disable-extensions")
+    # # Pass the argument 1 to allow and 2 to block
+    # opt.add_experimental_option("prefs", { \
+    #     "profile.default_content_setting_values.media_stream_camera": 1,
+    #     })
+    # _url_path = "https://scanmevacuno.gob.cl/"
+    # driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),options=opt,)
+    # driver.get(_url_path)
+    # time.sleep(3)
+    # driver.find_element(By.CLASS_NAME,'color-purple').click()
+    # driver.find_element(By.CLASS_NAME,'dialog-button-bold').click()
+    # time.sleep(10)
+    # data = driver.find_element(By.CLASS_NAME,'identidad')
+    # driver.close()
+    # # end
+    # res = data.text.split('\n')
+    # event = models.EventDB(
+    #     event_name = res[0],
+    #     event_location = res[1],
+    #     register_code = res[2],
+    #     export_code = ' ',
+    #     qr_code_scanmevacuno = ' ',
+    #     created_datetime = date.today(),
+    #     qr_code_registrocivil = ' ',
+    # )
+    # data = 
+    # return {"data":data.text.split('\n')}
+    return event.event_id
+    
 @app.get("/getevents",tags=['Events'])
 def get_events(session: Session = Depends(get_session)):
     events = session.query(models.EventDB).all()
