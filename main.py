@@ -46,27 +46,29 @@ async def autoamtion_scraper(file: UploadFile,event_id: str = Form(),session: Se
     This script enable the python script to run the selenium automation script that.
     Pull out the data from the website. From Given QR.
     '''
-    from PIL import Image
-    import pytesseract
-    contents = await file.read()
-    check_file_type = file.filename.split(".")[-1]
-    if check_file_type == "jpg" or check_file_type == "png" or check_file_type == "jpeg":
-        if not os.path.exists('uploads'):
-            os.makedirs('uploads')
-        if sys.platform == 'win32':
-            pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
-            save_file_path = os.getcwd()+"\\uploads\\"+file.filename
-        else:
-            pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
-            save_file_path = os.getcwd()+"/uploads/"+file.filename
-        save_file(save_file_path, contents)
-    raw_data = pytesseract.image_to_string(Image.open(save_file_path))
-    os.remove(save_file_path)
-    data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
-    eventObject = session.query(models.EventDB).get(event_id)
-    
-    return ORJSONResponse({"data":data,"event_id":event_id})
-    
+    try:
+        from PIL import Image
+        import pytesseract
+        contents = await file.read()
+        check_file_type = file.filename.split(".")[-1]
+        if check_file_type == "jpg" or check_file_type == "png" or check_file_type == "jpeg":
+            if not os.path.exists('uploads'):
+                os.makedirs('uploads')
+            if sys.platform == 'win32':
+                pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+                save_file_path = os.getcwd()+"\\uploads\\"+file.filename
+            else:
+                pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
+                save_file_path = os.getcwd()+"/uploads/"+file.filename
+            save_file(save_file_path, contents)
+        raw_data = pytesseract.image_to_string(Image.open(save_file_path))
+        os.remove(save_file_path)
+        data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
+        eventObject = session.query(models.EventDB).get(event_id)
+        
+        return ORJSONResponse({"data":data,"event_id":event_id})
+    except Exception as e:
+        return ORJSONResponse({"data":e})
 @app.get("/getevents",tags=['Events'])
 def get_events(session: Session = Depends(get_session)):
     events = session.query(models.EventDB).all()
