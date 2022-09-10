@@ -40,23 +40,24 @@ def save_file(filename, data):
         f.write(data)
 
 
-@app.post("/files/",response_class=ORJSONResponse)
-async def create_file(file: bytes = File(description="A file read as bytes")):
-    with open('image.jpg','wb') as image:
-        image.write(file)
-        image.close()
-    from PIL import Image
-    import pytesseract
-    if sys.platform == 'win32':
-        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
-    else:
-        pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
-    raw_data = pytesseract.image_to_string(Image.open('image.jpg'))
-    data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
-    return ORJSONResponse({"data": data})
+# @app.post("/files/",response_class=ORJSONResponse)
+# async def create_file(file: bytes = File(description="A file read as bytes")):
+#     with open('image.jpg','wb') as image:
+#         image.write(file)
+#         image.close()
+#     from PIL import Image
+#     import pytesseract
+#     if sys.platform == 'win32':
+#         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+#     else:
+#         pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
+#     raw_data = pytesseract.image_to_string(Image.open('image.jpg'))
+#     data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
+#     os.remove('image.jpg')
+#     return ORJSONResponse({"data": data})
 
 @app.post("/automationscrape",tags=['Automation Scraper'],response_class=ORJSONResponse)
-async def autoamtion_scraper(file: UploadFile,event_id: str = Form(),session: Session = Depends(get_session)):
+async def autoamtion_scraper(file: bytes = File(description="A file read as bytes"),event_id: str = Form(),session: Session = Depends(get_session)):
     '''
     This script enable the python script to run the selenium automation script that.
     Pull out the data from the website. From Given QR.
@@ -64,20 +65,15 @@ async def autoamtion_scraper(file: UploadFile,event_id: str = Form(),session: Se
     currentDateAndTime = datetime.now()
     from PIL import Image
     import pytesseract
-    contents = await file.read()
-    check_file_type = file.filename.split(".")[-1]
-    if check_file_type == "jpg" or check_file_type == "png" or check_file_type == "jpeg":
-        if not os.path.exists('uploads'):
-            os.makedirs('uploads')
-        if sys.platform == 'win32':
-            pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
-            save_file_path = os.getcwd()+"\\uploads\\"+file.filename
-        else:
-            pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
-            save_file_path = os.getcwd()+"/uploads/"+file.filename
-        save_file(save_file_path, contents)
-    raw_data = pytesseract.image_to_string(Image.open(save_file_path))
-    os.remove(save_file_path)
+    with open('image.jpg','wb') as image:
+        image.write(file)
+        image.close()
+    if sys.platform == 'win32':
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+    else:
+        pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
+    raw_data = pytesseract.image_to_string(Image.open('image.jpg'))
+    os.remove('image.jpg')
     data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
     eventObject = session.query(models.EventDB).get(event_id) 
     phonebook = session.query(models.PhonebookDB).get(event_id)
