@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Body, Depends
+from fastapi import FastAPI,Depends,UploadFile,Form
 from fastapi.encoders import jsonable_encoder
 import schemas
 from fastapi.responses import ORJSONResponse
@@ -7,6 +7,7 @@ import uvicorn
 from database import Base, engine, SessionLocal
 from sqlalchemy.orm import Session 
 from datetime import date
+import os,sys
 
 
 Base.metadata.create_all(engine)
@@ -34,54 +35,37 @@ def documentation_urls(session: Session = Depends(get_session)):
     
     return ORJSONResponse(res)
 
-@app.post("/automationscrape",tags=['Automation Scraper'])
-def autoamtion_scraper(event:schemas.Autosp,session: Session = Depends(get_session)):
+def save_file(filename, data):
+    with open(filename, 'wb') as f:
+        f.write(data)
+
+
+@app.post("/automationscrape",tags=['Automation Scraper'],response_class=ORJSONResponse)
+async def autoamtion_scraper(file: UploadFile,event_id: str = Form(),session: Session = Depends(get_session)):
     '''
     This script enable the python script to run the selenium automation script that.
     Pull out the data from the website. From Given QR.
     '''
-    print(event.event_id)
-    # # automation
-    # from selenium import webdriver
-    # from selenium.webdriver.chrome.options import Options
-    # from selenium.webdriver.chrome.service import Service as ChromeService
-    # from webdriver_manager.chrome import ChromeDriverManager
-    # from selenium.webdriver.common.by import By
-    # import time
-    # opt = Options()
-    # opt.add_argument("--disable-infobars")
-    # opt.add_argument("start-maximized")
-    # opt.add_argument("--headless")
-    # opt.add_argument("--disable-dev-shm-usage")
-    # opt.add_argument("--no-sandbox")
-    # opt.add_argument("--disable-extensions")
-    # # Pass the argument 1 to allow and 2 to block
-    # opt.add_experimental_option("prefs", { \
-    #     "profile.default_content_setting_values.media_stream_camera": 1,
-    #     })
-    # _url_path = "https://scanmevacuno.gob.cl/"
-    # driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),options=opt,)
-    # driver.get(_url_path)
-    # time.sleep(3)
-    # driver.find_element(By.CLASS_NAME,'color-purple').click()
-    # driver.find_element(By.CLASS_NAME,'dialog-button-bold').click()
-    # time.sleep(10)
-    # data = driver.find_element(By.CLASS_NAME,'identidad')
-    # driver.close()
-    # # end
-    # res = data.text.split('\n')
-    # event = models.EventDB(
-    #     event_name = res[0],
-    #     event_location = res[1],
-    #     register_code = res[2],
-    #     export_code = ' ',
-    #     qr_code_scanmevacuno = ' ',
-    #     created_datetime = date.today(),
-    #     qr_code_registrocivil = ' ',
-    # )
-    # data = 
-    # return {"data":data.text.split('\n')}
-    return event.event_id
+    from PIL import Image
+    import pytesseract
+    contents = await file.read()
+    check_file_type = file.filename.split(".")[-1]
+    if check_file_type == "jpg" or check_file_type == "png" or check_file_type == "jpeg":
+        if not os.path.exists('uploads'):
+            os.makedirs('uploads')
+        if sys.platform == 'win32':
+            pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+            save_file_path = os.getcwd()+"\\uploads\\"+file.filename
+        else:
+            pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
+            save_file_path = os.getcwd()+"/uploads/"+file.filename
+        save_file(save_file_path, contents)
+    raw_data = pytesseract.image_to_string(Image.open(save_file_path))
+    os.remove(save_file_path)
+    data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
+    eventObject = session.query(models.EventDB).get(event_id)
+    
+    return ORJSONResponse({"data":data,"event_id":event_id})
     
 @app.get("/getevents",tags=['Events'])
 def get_events(session: Session = Depends(get_session)):
