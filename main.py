@@ -89,6 +89,7 @@ async def autoamtion_scraper(file: bytes = File(description="A file read as byte
         session.commit()
 
         return ORJSONResponse({"data":data,"phonebook":{
+            'participant_id':phonebook.participant_id,
             'first_name':phonebook.first_name,
             'last_name':phonebook.last_name,
             'rut_id':phonebook.rut_id,
@@ -186,16 +187,16 @@ def add_phonebook(item:schemas.PhonebookDB, session: Session = Depends(get_sessi
 
 
 @app.put("/updatephonebook/{id}",tags=['Phonebook'])
-def update_phonebook(id:int, item:schemas.PhonebookDB, session: Session = Depends(get_session)):
+def update_phonebook(id:int, phone_number:str = Form(), session: Session = Depends(get_session)):
     itemObject = session.query(models.PhonebookDB).get(id)
-    itemObject.first_name = item.first_name
-    itemObject.last_name = item.last_name
-    itemObject.rut_id = item.rut_id
-    itemObject.phone_number = item.phone_number
-    itemObject.qr_code_scanmevacuno = item.qr_code_scanmevacuno
-    itemObject.created_datetime = item.created_datetime
-    itemObject.qr_code_registrocivil = item.qr_code_registrocivil
-    itemObject.qr_code_registrocivil = item.event_id
+    # itemObject.first_name = itemObject.first_name
+    # itemObject.last_name = itemObject.last_name
+    # itemObject.rut_id = itemObject.rut_id
+    itemObject.phone_number = phone_number
+    # itemObject.qr_code_scanmevacuno = itemObject.qr_code_scanmevacuno
+    # itemObject.created_datetime = itemObject.created_datetime
+    # itemObject.qr_code_registrocivil = itemObject.qr_code_registrocivil
+    # itemObject.event_id = itemObject.event_id
     session.commit()
     return itemObject
 
