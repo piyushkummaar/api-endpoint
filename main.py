@@ -66,22 +66,25 @@ async def autoamtion_scraper(file: UploadFile,event_id: str = Form(),session: Se
     data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
     eventObject = session.query(models.EventDB).get(event_id) 
     phonebook = session.query(models.PhonebookDB).get(event_id)
-    # create participant record
-    item = models.ParticipantRecord(
-    event_name = eventObject.event_name,
-    date_attended = date.today(),
-    hour = currentDateAndTime.strftime("%H"),
-    participant_id = phonebook.participant_id,
-    )
-    session.add(item)
-    session.commit()
+    if phonebook:
+        ## create participant record
+        item = models.ParticipantRecord(
+        event_name = eventObject.event_name,
+        date_attended = date.today(),
+        hour = currentDateAndTime.strftime("%H"),
+        participant_id = phonebook.participant_id,
+        )
+        session.add(item)
+        session.commit()
 
-    return ORJSONResponse({"data":data,"phonebook":{
-        'first_name':phonebook.first_name,
-        'last_name':phonebook.last_name,
-        'rut_id':phonebook.rut_id,
-        'phone_number':phonebook.phone_number
-    }})
+        return ORJSONResponse({"data":data,"phonebook":{
+            'first_name':phonebook.first_name,
+            'last_name':phonebook.last_name,
+            'rut_id':phonebook.rut_id,
+            'phone_number':phonebook.phone_number
+        }})
+    else:
+        return ORJSONResponse({"data":data,"phonebook":False})
 @app.get("/getevents",tags=['Events'])
 def get_events(session: Session = Depends(get_session)):
     events = session.query(models.EventDB).all()
