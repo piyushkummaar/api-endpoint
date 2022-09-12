@@ -61,17 +61,29 @@ async def autoamtion_scraper(file: bytes = File(description="A file read as byte
     data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
     eventObject = session.query(models.EventDB).get(event_id) 
     phonebook = session.query(models.PhonebookDB).get(event_id)
-    if phonebook:
-        ## create participant record
-        item = models.ParticipantRecord(
-        event_name = eventObject.event_name,
-        date_attended = date.today(),
-        hour = currentDateAndTime.strftime("%H"),
-        participant_id = phonebook.participant_id,
+    if not phonebook:
+        item = models.PhonebookDB(
+        first_name = data[2].split(' ')[0],
+        last_name = data[2].split(' ')[0],
+        rut_id = data[0].split(' ')[1],
+        phone_number = '',
+        qr_code_scanmevacuno = eventObject.qr_code_scanmevacuno,
+        created_datetime = date.today(),
+        qr_code_registrocivil = eventObject.qr_code_registrocivil,
+        event_id = eventObject.event_id,
         )
         session.add(item)
         session.commit()
+        session.refresh(item)
+        return ORJSONResponse({"data":data,"phonebook":{
+            'participant_id':item.participant_id,
+            'first_name':item.first_name,
+            'last_name':item.last_name,
+            'rut_id':item.rut_id,
+            'phone_number':item.phone_number
+        }})
 
+    else:
         return ORJSONResponse({"data":data,"phonebook":{
             'participant_id':phonebook.participant_id,
             'first_name':phonebook.first_name,
@@ -79,8 +91,7 @@ async def autoamtion_scraper(file: bytes = File(description="A file read as byte
             'rut_id':phonebook.rut_id,
             'phone_number':phonebook.phone_number
         }})
-    else:
-        return ORJSONResponse({"data":data,"phonebook":False})
+        
 @app.get("/getevents",tags=['Events'])
 def get_events(session: Session = Depends(get_session)):
     events = session.query(models.EventDB).all()
