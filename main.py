@@ -90,6 +90,7 @@ async def autoamtion_scraper(file: bytes = File(description="A file read as byte
             'last_name':phonebook.last_name,
             'rut_id':phonebook.rut_id,
             'phone_number':phonebook.phone_number
+            'staus':'exists'
         }})
         
 @app.get("/getevents",tags=['Events'])
