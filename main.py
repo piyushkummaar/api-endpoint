@@ -40,22 +40,6 @@ def save_file(filename, data):
         f.write(data)
 
 
-# @app.post("/files/",response_class=ORJSONResponse)
-# async def create_file(file: bytes = File(description="A file read as bytes")):
-#     with open('image.jpg','wb') as image:
-#         image.write(file)
-#         image.close()
-#     from PIL import Image
-#     import pytesseract
-#     if sys.platform == 'win32':
-#         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
-#     else:
-#         pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
-#     raw_data = pytesseract.image_to_string(Image.open('image.jpg'))
-#     data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
-#     os.remove('image.jpg')
-#     return ORJSONResponse({"data": data})
-
 @app.post("/automationscrape",tags=['Automation Scraper'],response_class=ORJSONResponse)
 async def autoamtion_scraper(file: bytes = File(description="A file read as bytes"),event_id: str = Form(),session: Session = Depends(get_session)):
     '''
