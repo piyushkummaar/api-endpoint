@@ -57,10 +57,12 @@ async def autoamtion_scraper(file: bytes = File(description="A file read as byte
     else:
         pytesseract.pytesseract.tesseract_cmd = r'/app/.apt/usr/bin/tesseract'
     raw_data = pytesseract.image_to_string(Image.open('image.jpg'))
-    os.remove('image.jpg')
+    # os.remove('image.jpg')
     data = [i for i in raw_data.split('\n') if len(i) != 0 and i != '  ' and i != ' '][3:6]
     eventObject = session.query(models.EventDB).get(event_id) 
-    phonebook = session.query(models.PhonebookDB).get(event_id)
+    print(data[0].split(' ')[1],"===================")
+    phonebook = session.query(models.PhonebookDB).filter(models.PhonebookDB.rut_id == data[0].split(' ')[1]).first()
+    print(phonebook,"-------------------------")
     if not phonebook:
         item = models.PhonebookDB(
         first_name = data[2].split(' ')[0],
@@ -83,16 +85,35 @@ async def autoamtion_scraper(file: bytes = File(description="A file read as byte
             'phone_number':item.phone_number,
             'status':'new'
         }})
-
     else:
-        return ORJSONResponse({"data":data,"phonebook":{
-            'participant_id':phonebook.participant_id,
-            'first_name':phonebook.first_name,
-            'last_name':phonebook.last_name,
-            'rut_id':phonebook.rut_id,
-            'phone_number':phonebook.phone_number,
-            'status':'exists'
-        }})
+        if not len(phonebook.phone_number) > 0: 
+            return ORJSONResponse({"data":data,"phonebook":{
+                'participant_id':phonebook.participant_id,
+                'first_name':phonebook.first_name,
+                'last_name':phonebook.last_name,
+                'rut_id':phonebook.rut_id,
+                'phone_number':phonebook.phone_number,
+                'status':'exists'
+            }})
+        else:
+            partcipant_ext =  session.query(models.ParticipantRecord).filter_by(event_name=event_id,participant_id=phonebook.participant_id).first()
+            if not partcipant_ext:
+                item = models.ParticipantRecord(
+                    event_name = event_id,
+                    date_attended = date.today(),
+                    hour = datetime.now().strftime('%H:%M'),
+                    participant_id = phonebook.participant_id,
+                )
+                session.add(item)
+                session.commit()
+            return ORJSONResponse({"data":data,"phonebook":{
+                'participant_id':phonebook.participant_id,
+                'first_name':phonebook.first_name,
+                'last_name':phonebook.last_name,
+                'rut_id':phonebook.rut_id,
+                'phone_number':phonebook.phone_number,
+                'status':'exists'
+            }})
         
 @app.get("/getevents",tags=['Events'])
 def get_events(session: Session = Depends(get_session)):
@@ -183,8 +204,8 @@ def add_phonebook(item:schemas.PhonebookDB, session: Session = Depends(get_sessi
     return item
 
 
-@app.put("/updatephonebook/{id}",tags=['Phonebook'])
-def update_phonebook(id:int, phone_number:str = Form(), session: Session = Depends(get_session)):
+@app.put("/updatephonebook/{id}",tags=['Phonebook'],response_class=ORJSONResponse)
+def update_phonebook(id:int, phone_number:str = Form(),event_id:str = Form(), session: Session = Depends(get_session)):
     itemObject = session.query(models.PhonebookDB).get(id)
     # itemObject.first_name = itemObject.first_name
     # itemObject.last_name = itemObject.last_name
@@ -195,7 +216,22 @@ def update_phonebook(id:int, phone_number:str = Form(), session: Session = Depen
     # itemObject.qr_code_registrocivil = itemObject.qr_code_registrocivil
     # itemObject.event_id = itemObject.event_id
     session.commit()
-    return itemObject
+    data_ext = session.query(models.ParticipantRecord).filter_by(event_name=event_id,participant_id=id).first()
+    if data_ext:
+        return ORJSONResponse({'data':'redirect_to_thank_you','status':True})
+    else:
+        item = models.ParticipantRecord(
+            event_name = event_id,
+            date_attended = date.today(),
+            hour = datetime.now().strftime('%H:%M'),
+            participant_id = id,
+        )
+        session.add(item)
+        session.commit()
+        return ORJSONResponse({'data':'redirect_to_thank_you','status':True})
+
+    
+    # return itemObject
 
 
 @app.delete("/deletephonebook/{id}",tags=['Phonebook'])
