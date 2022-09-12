@@ -80,7 +80,8 @@ async def autoamtion_scraper(file: bytes = File(description="A file read as byte
             'first_name':item.first_name,
             'last_name':item.last_name,
             'rut_id':item.rut_id,
-            'phone_number':item.phone_number
+            'phone_number':item.phone_number,
+            'status':'new'
         }})
 
     else:
@@ -89,8 +90,8 @@ async def autoamtion_scraper(file: bytes = File(description="A file read as byte
             'first_name':phonebook.first_name,
             'last_name':phonebook.last_name,
             'rut_id':phonebook.rut_id,
-            'phone_number':phonebook.phone_number
-            'staus':'exists'
+            'phone_number':phonebook.phone_number,
+            'status':'exists'
         }})
         
 @app.get("/getevents",tags=['Events'])
