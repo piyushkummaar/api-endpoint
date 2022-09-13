@@ -37,5 +37,8 @@ class ParticipantRecord(BaseModel):
     hour : str
     participant_id : int
 
-class Autosp(BaseModel):
-    event_id : str
+class PhonebookDBupdate(BaseModel):
+    id:str
+    event_id:str
+    phone_number:str
+
